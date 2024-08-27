@@ -15,7 +15,7 @@ class DatastoreClient:
 
     Allows updating of the datastore using the send method.
     """
-    def __init__(self, avb_url: str, client_id: Optional[int], path: str="") -> None:
+    def __init__(self, avb_url: str, client_id: Optional[int]=None, path: str="") -> None:
         self.path: str = path
         self.avb_url: str = avb_url
         self.client_id: int = client_id if client_id is not None else random.randint(0, pow(2, 32)-1)
@@ -51,7 +51,7 @@ class DatastoreClient:
         Continuously polls for updates until self.enabled is set to False.
         """
         self.enabled = True
-        etag = -1
+        etag = 0
         
         while self.enabled:
             headers = {
@@ -59,21 +59,29 @@ class DatastoreClient:
             }
             async with aiohttp.ClientSession(headers=headers) as session:
                 logger.info(f"{self.client_id}: reading from {self.datastore_url}")
-                async with session.get(self.datastore_url) as response:
-                    etag = int(response.headers["ETag"])
-                    if response.status == 304:
-                        logger.info(f"{self.client_id}: nothing to update")
-                    else:
-                        logger.info(f"{self.client_id}: sending update")
-                        res = await response.json()
-                        write_message_callback(res)
+                response = await session.get(self.datastore_url)
+                etag = int(response.headers["ETag"]) if "ETag" in response.headers else etag
+                if response.status == 304:
+                    logger.info(f"{self.client_id}: nothing to update")
+                else:
+                    logger.info(f"{self.client_id}: sending update")
+                    write_message_callback(await response.json())
 
         logger.info(f"{self.client_id}: Stopping")
 
 async def main():
-    client = DatastoreClient("http://localhost:8888")
-    await client.run()
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[logging.StreamHandler()],
+    )
+    
+    def write_message(message):
+        logger.info(message)
 
+    client = DatastoreClient("http://1248.local")
+    task = asyncio.create_task(client.run(write_message))
+    await asyncio.wait([task])
 
 if __name__ == '__main__':
     asyncio.run(main())
