@@ -11,7 +11,7 @@ For testing connectivity to a virtual device, use my [MOTU Development AVB Serve
 In the command line at the project root, call
 
 ```
-./run
+./run --avbserver http://localhost:8888 --port 8889
 ```
 
 Websocket connections can be made from, for example, Chrome DevTools as follows:
