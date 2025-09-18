@@ -36,15 +36,17 @@ class DatastoreClient:
         else:
             return f"{self.avb_url}/datastore?client={self.client_id}"
         
-    async def send(self, message):
+    async def send(self, message, write_message_callback: Callable[[Any], asyncio.Future[None]]):
         """
         Sends an update to the AVB server with the given message.
         """
         async with aiohttp.ClientSession() as session:
             logger.info(f"{self.client_id}: sending update to {self.datastore_url}")
             async with session.patch(self.datastore_url, data={ "json": json.dumps(message)}) as response:
-                if response.status != 200:
-                    logger.warn("Error in update")
+                if response.status == 204:
+                    write_message_callback(message)
+                elif response.status != 200:
+                    logger.warn(f"Error in update: {response}")
 
     async def run(self, write_message_callback: Callable[[Any], asyncio.Future[None]]) -> None:
         """

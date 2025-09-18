@@ -84,8 +84,8 @@ class DatastoreHandler(tornado.websocket.WebSocketHandler):
 
             ws.send(JSON.stringify({ "ext/ibankDisplayOrder": "2:1:0"}));    
         """
-        logger.info(f"Client {self.client_id} sent a message.")
-        await self.client.send(json.loads(message))
+        logger.info(f"Client {self.client_id} sent a message: {message}")
+        await self.client.send(json.loads(message), self.write_message)
 
 
 def make_app(avb_server_url: str) -> tornado.web.Application:
